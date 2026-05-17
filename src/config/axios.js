@@ -31,13 +31,26 @@ API.interceptors.request.use(
 
 // Response Interceptor
 API.interceptors.response.use(
-  (response) => response.data, // Return only data to simplify calls
+  (response) => {
+    // Log the status so it can be seen in the console
+    console.log(`[API] ${response.config.method?.toUpperCase()} ${response.config.url} - Status: ${response.status}`);
+    
+    // Attach status to the data object so it can be accessed in the calling code without breaking existing `.data` expectations
+    if (response.data && typeof response.data === "object") {
+      response.data.status = response.status;
+    }
+    
+    return response.data; // Return data to simplify calls
+  },
   (error) => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      // Optional: redirect to login
-      // window.location.href = "/login";
+    if (error.response) {
+      console.log(`[API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url} - Status: ${error.response.status}`);
+      if (error.response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        // Optional: redirect to login
+        // window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   }

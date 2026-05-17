@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 import API from "../config/axios";
 
 function Signup() {
@@ -58,6 +59,29 @@ function Signup() {
     } catch (error) {
       setStatus({ type: "error", message: error.response?.data?.error || error.message });
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const data = await API.post("/users/google-login", {
+        credential: credentialResponse.credential,
+      }, { withAuth: false });
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      setStatus({ type: "success", message: "Google Sign-Up successful!" });
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 2000);
+    } catch (error) {
+      console.error(error);
+      setStatus({ type: "error", message: error.response?.data?.error || "Google sign-up failed" });
+      setTimeout(() => setStatus({ type: "", message: "" }), 3000);
+    }
+  };
+
+  const handleGoogleFailure = () => {
+    setStatus({ type: "error", message: "Google sign-up failed" });
+    setTimeout(() => setStatus({ type: "", message: "" }), 3000);
   };
 
   return (
@@ -121,6 +145,24 @@ function Signup() {
                 Continue
               </button>
             </form>
+
+            <div className="mt-6 flex items-center justify-center space-x-2">
+              <div className="h-px bg-gray-200 w-full"></div>
+              <span className="text-gray-400 text-sm font-medium">OR</span>
+              <div className="h-px bg-gray-200 w-full"></div>
+            </div>
+
+            <div className="mt-6 flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleFailure}
+                useOneTap
+                shape="rectangular"
+                theme="outline"
+                size="large"
+                text="signup_with"
+              />
+            </div>
           </>
         ) : (
           <>
