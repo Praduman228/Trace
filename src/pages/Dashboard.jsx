@@ -12,6 +12,10 @@ const Dashboard = () => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+    if(!token){
+      window.location.href = "/";
+    }
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }

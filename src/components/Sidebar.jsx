@@ -81,8 +81,9 @@ const Sidebar = () => {
         
         <button 
           onClick={() => {
-            localStorage.removeItem("user");
-            window.location.href = "/signup";
+            localStorage.removeItem("user")
+            localStorage.removeItem("token")
+            window.location.href = "/";
           }}
           className="flex items-center gap-3 w-full p-4 rounded-2xl text-red-500 font-bold hover:bg-red-50 transition-colors"
         >

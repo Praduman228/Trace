@@ -1,17 +1,27 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import API from "../config/axios";
 
 function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState({ type: "", message: "" });
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setStatus({ type: "success", message: "Logging you in..." });
-    setTimeout(() => {
+    try {
+      const data = await API.post("/users/login", { email, password }, { withAuth: false });
+      
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
       setStatus({ type: "success", message: "Login successful!" });
-    }, 1500);
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 2000);
+    } catch (error) {
+      console.log(error);
+      setStatus({ type: "error", message: error.response?.data?.error || error.message });
+      setTimeout(() => setStatus({ type: "", message: "" }), 3000);
+    }
   };
 
   return (
