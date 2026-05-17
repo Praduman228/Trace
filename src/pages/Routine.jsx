@@ -1,0 +1,514 @@
+import React, { useState, useEffect } from "react";
+import { 
+  Plus, Trash2, Dumbbell, Save, ChevronRight, CheckCircle2, 
+  Clock, List, ArrowLeft, Search, X, ChevronLeft, Target, 
+  Calendar, Pencil, Check 
+} from "lucide-react";
+import API from "../config/axios";
+
+const Routine = () => {
+  const [routines, setRoutines] = useState([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [step, setStep] = useState(1);
+  const [editingId, setEditingId] = useState(null);
+  
+  // Form State
+  const [routineName, setRoutineName] = useState("");
+  const [selectedDay, setSelectedDay] = useState("");
+  const [targetMuscles, setTargetMuscles] = useState([]);
+  const [exercises, setExercises] = useState([]);
+  const [availableExercises, setAvailableExercises] = useState([]);
+  const [fetchingExercises, setFetchingExercises] = useState(false);
+
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const musclesList = ["Chest", "Shoulders", "Back", "Legs", "Biceps", "Triceps", "Abs"];
+
+  useEffect(() => {
+    fetchRoutines();
+  }, []);
+
+  useEffect(() => {
+    if (step === 4 && targetMuscles.length > 0) {
+      fetchExercisesByMuscles();
+    }
+  }, [step, targetMuscles]);
+
+  const fetchRoutines = async () => {
+    try {
+      setLoading(true);
+      const data = await API.get("/routines");
+      setRoutines(data);
+    } catch (error) {
+      console.error("Error fetching routines:", error);
+      setRoutines([
+        { _id: "1", RoutineName: "Morning Push", day: "Monday", targetMuscle: ["Chest", "Triceps"], exercises: [{}, {}] },
+        { _id: "2", RoutineName: "Back & Biceps", day: "Tuesday", targetMuscle: ["Back", "Biceps"], exercises: [{}] },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchExercisesByMuscles = async () => {
+    try {
+      setFetchingExercises(true);
+      const data = await API.get(`/exercises/by-muscle?muscles=${targetMuscles.join(",")}`);
+      setAvailableExercises(data);
+    } catch (error) {
+      console.error("Error fetching exercises:", error);
+      setAvailableExercises([
+        { _id: "ex1", name: "Bench Press", targetMuscle: "Chest" },
+        { _id: "ex2", name: "Push Ups", targetMuscle: "Chest" },
+        { _id: "ex3", name: "Shoulder Press", targetMuscle: "Shoulders" },
+      ].filter(e => targetMuscles.includes(e.targetMuscle)));
+    } finally {
+      setFetchingExercises(false);
+    }
+  };
+
+  const toggleMuscle = (muscle) => {
+    if (targetMuscles.includes(muscle)) {
+      setTargetMuscles(targetMuscles.filter((m) => m !== muscle));
+    } else {
+      setTargetMuscles([...targetMuscles, muscle]);
+    }
+  };
+
+  const addExercise = (template) => {
+    if (exercises.some(ex => ex.exerciseId === template._id)) return;
+    setExercises([
+      ...exercises,
+      {
+        exerciseId: template._id,
+        name: template.name,
+        sets: [{ sets: 1, weight: 0, reps: 0 }],
+      },
+    ]);
+  };
+
+  const removeExercise = (id) => {
+    setExercises(exercises.filter((ex) => ex.exerciseId !== id));
+  };
+
+  const addSet = (exIdx) => {
+    const updatedExercises = [...exercises];
+    const lastSet = updatedExercises[exIdx].sets[updatedExercises[exIdx].sets.length - 1];
+    updatedExercises[exIdx].sets.push({
+      sets: updatedExercises[exIdx].sets.length + 1,
+      weight: lastSet ? lastSet.weight : 0,
+      reps: lastSet ? lastSet.reps : 0,
+    });
+    setExercises(updatedExercises);
+  };
+
+  const handleSetChange = (exIdx, setIdx, field, value) => {
+    const updatedExercises = [...exercises];
+    updatedExercises[exIdx].sets[setIdx][field] = Number(value);
+    setExercises(updatedExercises);
+  };
+
+  const handleSaveRoutine = async () => {
+    try {
+      const routineData = {
+        RoutineName: routineName,
+        day: selectedDay,
+        targetMuscle: targetMuscles,
+        exercises: exercises.map(ex => ({
+          exerciseId: ex.exerciseId,
+          sets: ex.sets
+        }))
+      };
+      
+      if (editingId) {
+        await API.put(`/routines/${editingId}`, routineData);
+      } else {
+        await API.post("/routines", routineData);
+      }
+      
+      fetchRoutines();
+      setIsModalOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error("Error saving routine:", error);
+      alert("Failed to save routine.");
+    }
+  };
+
+  const handleEditRoutine = (routine) => {
+    setEditingId(routine._id);
+    setRoutineName(routine.RoutineName);
+    setSelectedDay(routine.day);
+    setTargetMuscles(routine.targetMuscle);
+    setExercises(routine.exercises.map(ex => ({
+      exerciseId: ex.exerciseId?._id || ex.exerciseId,
+      name: ex.exerciseId?.name || "Exercise",
+      sets: ex.sets
+    })));
+    setStep(1);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteRoutine = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this routine?")) return;
+    try {
+      await API.delete(`/routines/${id}`);
+      fetchRoutines();
+    } catch (error) {
+      console.error("Error deleting routine:", error);
+      alert("Failed to delete routine.");
+    }
+  };
+
+  const resetForm = () => {
+    setStep(1);
+    setRoutineName("");
+    setSelectedDay("");
+    setTargetMuscles([]);
+    setExercises([]);
+    setEditingId(null);
+  };
+
+  const nextStep = () => setStep(step + 1);
+  const prevStep = () => setStep(step - 1);
+
+  return (
+    <div className="flex-1 p-6 lg:p-10 font-outfit relative">
+      <header className="flex justify-between items-center mb-10">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 font-outfit">Workout Routines</h1>
+          <p className="text-gray-500 font-medium">Your personalized weekly training cycles.</p>
+        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 px-8 py-4 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:-translate-y-1 hover:shadow-2xl transition-all"
+        >
+          <Plus size={20} />
+          Add Routine
+        </button>
+      </header>
+
+      {/* Routine List */}
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+        </div>
+      ) : routines.length === 0 ? (
+        <div className="py-20 text-center panel-glass border-none shadow-sm">
+          <Dumbbell size={60} className="mx-auto text-gray-200 mb-6" />
+          <h3 className="text-xl font-bold text-gray-800">No routines yet</h3>
+          <p className="text-gray-400 mt-2">Create your first workout plan to get started.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {routines.map((routine) => (
+            <div key={routine._id} className="panel-glass !p-8 border-none shadow-sm hover:shadow-2xl transition-all group overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-primary/10 transition-colors"></div>
+              <div className="relative z-10">
+                <div className="flex justify-between items-start mb-6">
+                  <span className="px-4 py-1.5 bg-primary/10 text-primary text-[10px] font-bold rounded-full uppercase tracking-widest border border-primary/10">
+                    {routine.day}
+                  </span>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleEditRoutine(routine)}
+                      className="p-2 text-gray-300 hover:text-primary transition-colors"
+                    >
+                      <Pencil size={18} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteRoutine(routine._id)}
+                      className="p-2 text-gray-300 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">{routine.RoutineName}</h3>
+                <div className="flex flex-wrap gap-2 mb-8">
+                  {routine.targetMuscle.map((m, i) => (
+                    <span key={i} className="text-[10px] font-bold text-gray-500 bg-white px-3 py-1 rounded-lg border border-gray-100 shadow-sm">
+                      {m}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex justify-between items-center pt-6 border-t border-gray-50">
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <List size={16} />
+                    <span className="text-xs font-bold">{routine.exercises?.length || 0} Exercises</span>
+                  </div>
+                  <button className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-primary hover:text-white transition-all shadow-sm">
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Multi-step Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-in fade-in duration-300"
+            onClick={() => setIsModalOpen(false)}
+          ></div>
+          
+          {/* Modal Content */}
+          <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl shadow-gray-900/20 flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+            {/* Header */}
+            <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/30">
+                  <Dumbbell size={24} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Create New Routine</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    {[1, 2, 3, 4].map((s) => (
+                      <div 
+                        key={s} 
+                        className={`h-1.5 rounded-full transition-all duration-500 ${
+                          s <= step ? (s === step ? "w-8 bg-primary" : "w-4 bg-primary/40") : "w-4 bg-gray-100"
+                        }`}
+                      ></div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all shadow-sm"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Step Content */}
+            <div className="flex-1 overflow-y-auto p-10">
+              {step === 1 && (
+                <div className="max-w-md mx-auto py-10 animate-in slide-in-from-bottom-4 duration-500">
+                  <div className="text-center mb-10">
+                    <div className="w-20 h-20 bg-primary/10 text-primary rounded-3xl flex items-center justify-center mx-auto mb-6">
+                        <Pencil size={32} />
+                    </div>
+                    <h3 className="text-3xl font-bold text-gray-900 mb-2">Routine Name</h3>
+                    <p className="text-gray-500">Give your workout plan a memorable name.</p>
+                  </div>
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="e.g. Explosive Power Push"
+                    value={routineName}
+                    onChange={(e) => setRoutineName(e.target.value)}
+                    className="w-full bg-gray-50 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl px-6 py-5 text-xl font-bold outline-none transition-all text-center placeholder:text-gray-200"
+                  />
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="max-w-2xl mx-auto py-10 animate-in slide-in-from-right-4 duration-500">
+                  <div className="text-center mb-10">
+                    <div className="w-20 h-20 bg-accent/10 text-accent rounded-3xl flex items-center justify-center mx-auto mb-6">
+                        <Calendar size={32} />
+                    </div>
+                    <h3 className="text-3xl font-bold text-gray-900 mb-2">Select Day</h3>
+                    <p className="text-gray-500">When do you plan to perform this routine?</p>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {days.map((day) => (
+                      <button
+                        key={day}
+                        onClick={() => setSelectedDay(day)}
+                        className={`p-5 rounded-3xl text-sm font-bold border-2 transition-all flex flex-col items-center gap-3 ${
+                          selectedDay === day
+                            ? "bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-105"
+                            : "bg-white border-gray-100 text-gray-400 hover:border-primary/30"
+                        }`}
+                      >
+                        <Clock size={20} className={selectedDay === day ? "text-white" : "text-gray-200"} />
+                        {day}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="max-w-2xl mx-auto py-10 animate-in slide-in-from-right-4 duration-500">
+                  <div className="text-center mb-10">
+                    <div className="w-20 h-20 bg-green-100 text-green-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                        <Target size={32} />
+                    </div>
+                    <h3 className="text-3xl font-bold text-gray-900 mb-2">Target Muscles</h3>
+                    <p className="text-gray-500">Select the muscle groups you'll be training.</p>
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    {musclesList.map((muscle) => (
+                      <button
+                        key={muscle}
+                        onClick={() => toggleMuscle(muscle)}
+                        className={`px-8 py-4 rounded-2xl text-base font-bold border-2 transition-all flex items-center gap-3 ${
+                          targetMuscles.includes(muscle)
+                            ? "bg-green-500 border-green-500 text-white shadow-xl shadow-green-200 scale-105"
+                            : "bg-white border-gray-100 text-gray-400 hover:border-green-300"
+                        }`}
+                      >
+                        {targetMuscles.includes(muscle) && <CheckCircle2 size={18} />}
+                        {muscle}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-right-4 duration-500">
+                  {/* Exercise Browser */}
+                  <div className="lg:col-span-4 space-y-6">
+                    <div className="bg-gray-50 rounded-[2rem] p-6 h-full border border-gray-100">
+                        <h4 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
+                            <Search size={16} />
+                            Available Exercises
+                        </h4>
+                        {fetchingExercises ? (
+                            <div className="flex justify-center py-10">
+                                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                                {availableExercises.map((ex) => {
+                                    const isAdded = exercises.some(e => e.exerciseId === ex._id);
+                                    return (
+                                        <button
+                                            key={ex._id}
+                                            onClick={() => addExercise(ex)}
+                                            className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all border-2 ${
+                                                isAdded 
+                                                ? "bg-green-50 border-green-200 text-green-700 opacity-50 cursor-not-allowed" 
+                                                : "bg-white border-transparent hover:border-primary shadow-sm hover:shadow-md"
+                                            }`}
+                                        >
+                                            <div className="text-left">
+                                                <p className="text-sm font-bold">{ex.name}</p>
+                                                <p className="text-[10px] uppercase font-black tracking-widest text-gray-300">{ex.targetMuscle}</p>
+                                            </div>
+                                            {isAdded ? <Check size={16} /> : <Plus size={16} className="text-primary" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                  </div>
+
+                  {/* Routine Builder */}
+                  <div className="lg:col-span-8 space-y-4">
+                    <h4 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4 px-2">Your Routine Build</h4>
+                    {exercises.length === 0 ? (
+                        <div className="py-20 text-center bg-gray-50/50 rounded-[2rem] border-2 border-dashed border-gray-100 flex flex-col items-center">
+                            <Dumbbell size={40} className="text-gray-100 mb-4" />
+                            <p className="text-gray-300 font-bold">Add exercises from the left</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 pr-2 max-h-[500px] overflow-y-auto scrollbar-hide">
+                            {exercises.map((ex, exIdx) => (
+                                <div key={ex.exerciseId} className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden animate-in slide-in-from-left-4 duration-300">
+                                    <div className="px-6 py-4 bg-gray-50/50 flex justify-between items-center border-b border-gray-50">
+                                        <div className="flex items-center gap-3">
+                                            <span className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-black text-primary shadow-sm border border-gray-100 text-xs">
+                                                {exIdx + 1}
+                                            </span>
+                                            <h5 className="font-bold text-gray-800">{ex.name}</h5>
+                                        </div>
+                                        <button 
+                                            onClick={() => removeExercise(ex.exerciseId)}
+                                            className="text-red-300 hover:text-red-500 transition-colors"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                    <div className="p-6">
+                                        <div className="grid grid-cols-3 gap-4 mb-3 text-center">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">Set</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">Weight (kg)</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">Reps</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {ex.sets.map((set, sIdx) => (
+                                                <div key={sIdx} className="grid grid-cols-3 gap-4">
+                                                    <div className="bg-gray-50 rounded-xl py-3 text-center font-bold text-gray-400 text-sm"># {set.sets}</div>
+                                                    <input
+                                                        type="number"
+                                                        value={set.weight}
+                                                        onChange={(e) => handleSetChange(exIdx, sIdx, "weight", e.target.value)}
+                                                        className="bg-white border border-gray-100 rounded-xl py-3 text-center font-bold text-primary focus:border-primary outline-none shadow-sm"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        value={set.reps}
+                                                        onChange={(e) => handleSetChange(exIdx, sIdx, "reps", e.target.value)}
+                                                        className="bg-white border border-gray-100 rounded-xl py-3 text-center font-bold text-gray-800 focus:border-primary outline-none shadow-sm"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <button 
+                                            onClick={() => addSet(exIdx)}
+                                            className="mt-4 w-full py-3 rounded-xl border-2 border-dashed border-gray-100 text-gray-300 font-bold hover:border-primary/20 hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2 text-sm"
+                                        >
+                                            <Plus size={14} /> Add Set
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-8 border-t border-gray-50 flex justify-between items-center bg-gray-50/30">
+              <button
+                onClick={prevStep}
+                disabled={step === 1}
+                className="flex items-center gap-2 px-6 py-3 text-gray-400 font-bold hover:text-gray-600 disabled:opacity-0 transition-all"
+              >
+                <ChevronLeft size={20} />
+                Back
+              </button>
+              
+              {step < 4 ? (
+                <button
+                  onClick={nextStep}
+                  disabled={(step === 1 && !routineName) || (step === 2 && !selectedDay) || (step === 3 && targetMuscles.length === 0)}
+                  className="flex items-center gap-2 px-10 py-4 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none"
+                >
+                  Continue
+                  <ChevronRight size={20} />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSaveRoutine}
+                  disabled={exercises.length === 0}
+                  className="flex items-center gap-2 px-10 py-4 bg-gradient-to-tr from-primary to-accent text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none"
+                >
+                  <Save size={20} />
+                  Save Routine
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Routine;
