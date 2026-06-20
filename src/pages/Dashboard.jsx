@@ -246,7 +246,7 @@ const Dashboard = () => {
                                       type="number" 
                                       value={set.weight}
                                       onChange={(e) => handleSetChange(idx, sIdx, "weight", e.target.value)}
-                                      className="w-full max-w-[3.5rem] sm:max-w-[5rem] text-center bg-gray-50 border border-transparent hover:border-gray-200 focus:border-primary focus:bg-white rounded-lg py-1 font-bold text-primary outline-none transition-all text-sm sm:text-base"
+                                      className="w-full max-w-[3.8rem] min-[375px]:max-w-[4.5rem] sm:max-w-[5rem] text-center bg-gray-50 border border-transparent hover:border-gray-200 focus:border-primary focus:bg-white rounded-lg py-1.5 sm:py-2 font-bold text-primary outline-none transition-all text-sm sm:text-base no-spinner"
                                   />
                               </div>
                               <div className="relative flex justify-center">
@@ -254,7 +254,7 @@ const Dashboard = () => {
                                       type="number" 
                                       value={set.reps}
                                       onChange={(e) => handleSetChange(idx, sIdx, "reps", e.target.value)}
-                                      className="w-full max-w-[3.5rem] sm:max-w-[5rem] text-center bg-gray-50 border border-transparent hover:border-gray-200 focus:border-primary focus:bg-white rounded-lg py-1 font-bold text-gray-800 outline-none transition-all text-sm sm:text-base"
+                                      className="w-full max-w-[3.8rem] min-[375px]:max-w-[4.5rem] sm:max-w-[5rem] text-center bg-gray-50 border border-transparent hover:border-gray-200 focus:border-primary focus:bg-white rounded-lg py-1.5 sm:py-2 font-bold text-gray-800 outline-none transition-all text-sm sm:text-base no-spinner"
                                   />
                               </div>
                               <div className="flex justify-center">

@@ -1,17 +1,56 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, CalendarDays, User, LogOut, ChevronRight, X } from "lucide-react";
+import { LayoutDashboard, CalendarDays, User, LogOut, ChevronRight, X, Download, Sparkles } from "lucide-react";
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallBtn, setShowInstallBtn] = useState(false);
+  const [showIosTip, setShowIosTip] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    if (isIOS && !isStandalone) {
+      setShowIosTip(true);
+    }
+
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBtn(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    const handleAppInstalled = () => {
+      setShowInstallBtn(false);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
   }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User choice: ${outcome}`);
+    setDeferredPrompt(null);
+    setShowInstallBtn(false);
+  };
 
   const menuItems = [
     {
@@ -30,7 +69,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     <div className={`fixed left-0 top-0 h-screen w-72 bg-white/70 backdrop-blur-2xl border-r border-white/20 flex flex-col z-50 transition-transform duration-300 ${
       isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
     }`}>
-      <div className="p-8 overflow-y-auto">
+      <div className="flex-1 p-8 overflow-y-auto">
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-tr from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
@@ -75,7 +114,26 @@ const Sidebar = ({ isOpen, onClose }) => {
         </nav>
       </div>
 
-      <div className="mt-auto p-8 border-t border-gray-50">
+      <div className="mt-auto p-8 border-t border-gray-50 pb-[calc(2rem+env(safe-area-inset-bottom,0px))]">
+        {showInstallBtn && (
+          <button
+            onClick={handleInstallClick}
+            className="flex items-center gap-3 w-full p-4 mb-3 rounded-2xl bg-gradient-to-r from-primary to-accent text-white font-bold hover:shadow-lg transition-all"
+          >
+            <Download size={20} />
+            <span>Install Web App</span>
+          </button>
+        )}
+        {showIosTip && (
+          <div className="mb-4 p-3.5 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-2xl text-xs text-gray-600">
+            <div className="flex gap-2 items-start font-semibold text-purple-700 mb-1">
+              <Sparkles size={14} className="mt-0.5 shrink-0" />
+              <span>Install App on iOS</span>
+            </div>
+            <p className="leading-relaxed">Tap share button <span className="font-bold">📤</span> then <span className="font-bold">"Add to Home Screen"</span>.</p>
+          </div>
+        )}
+
         <div className="flex items-center gap-4 mb-6">
           <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-primary/10 to-accent/10 flex items-center justify-center border-2 border-white shadow-sm overflow-hidden">
              {user ? (

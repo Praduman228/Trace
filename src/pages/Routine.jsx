@@ -297,9 +297,9 @@ const Routine = () => {
           ></div>
           
           {/* Modal Content */}
-          <div className="relative bg-white w-full max-w-4xl h-full sm:h-auto max-h-[95vh] sm:max-h-[90vh] rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl shadow-gray-900/20 flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+          <div className="relative bg-white w-full max-w-4xl h-full sm:h-auto max-h-[100dvh] sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] shadow-2xl shadow-gray-900/20 flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
             {/* Header */}
-            <div className="p-4 sm:p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+            <div className="p-4 sm:p-8 pt-[calc(1rem+env(safe-area-inset-top,0px))] border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
               <div className="flex items-center gap-3 sm:gap-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/30">
                   <Dumbbell className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -484,13 +484,13 @@ const Routine = () => {
                                                         type="number"
                                                         value={set.weight}
                                                         onChange={(e) => handleSetChange(exIdx, sIdx, "weight", e.target.value)}
-                                                        className="bg-white border border-gray-100 rounded-xl py-2 sm:py-3 text-center font-bold text-primary focus:border-primary outline-none shadow-sm text-sm sm:text-base w-full"
+                                                        className="bg-white border border-gray-100 rounded-xl py-2 sm:py-3 text-center font-bold text-primary focus:border-primary outline-none shadow-sm text-sm sm:text-base w-full no-spinner"
                                                     />
                                                     <input
                                                         type="number"
                                                         value={set.reps}
                                                         onChange={(e) => handleSetChange(exIdx, sIdx, "reps", e.target.value)}
-                                                        className="bg-white border border-gray-100 rounded-xl py-2 sm:py-3 text-center font-bold text-gray-800 focus:border-primary outline-none shadow-sm text-sm sm:text-base w-full"
+                                                        className="bg-white border border-gray-100 rounded-xl py-2 sm:py-3 text-center font-bold text-gray-800 focus:border-primary outline-none shadow-sm text-sm sm:text-base w-full no-spinner"
                                                     />
                                                 </div>
                                             ))}
@@ -512,7 +512,7 @@ const Routine = () => {
             </div>
 
             {/* Footer */}
-            <div className="p-4 sm:p-8 border-t border-gray-50 flex justify-between items-center bg-gray-50/30">
+            <div className="p-4 sm:p-8 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] border-t border-gray-50 flex justify-between items-center bg-gray-50/30">
               <button
                 onClick={prevStep}
                 disabled={step === 1}
