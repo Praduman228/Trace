@@ -174,12 +174,12 @@ function Signup() {
               We've sent a 6-digit code to <strong>{formData.email}</strong>
             </p>
             <form onSubmit={handleVerifyOtp} className="space-y-8">
-              <div className="flex gap-4 justify-center">
+              <div className="flex gap-2 sm:gap-4 justify-center">
                 {otp.map((digit, idx) => (
                   <input
                     key={idx}
                     id={`otp-${idx}`}
-                    className="w-14 h-14 text-center text-2xl font-bold rounded-lg border border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all"
+                    className="w-full max-w-[2.25rem] xs:max-w-[2.75rem] sm:max-w-[3.5rem] h-10 xs:h-12 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-lg border border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all"
                     type="text"
                     maxLength="1"
                     value={digit}
