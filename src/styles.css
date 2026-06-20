@@ -9,7 +9,7 @@ body {
 }
 
 .panel-glass {
-  @apply bg-white/80 backdrop-blur-xl border border-white/30 rounded-xl p-10 shadow-2xl;
+  @apply bg-white/80 backdrop-blur-xl border border-white/30 rounded-xl p-6 sm:p-10 shadow-2xl;
 }
 
 @keyframes slideIn {
