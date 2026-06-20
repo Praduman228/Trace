@@ -8,7 +8,7 @@ const MainLayout = ({ children }) => {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9]">
       {/* Mobile Top Bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center px-6 z-40">
+      <div className="lg:hidden fixed top-0 left-0 right-0 pt-safe bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center px-6 z-40" style={{ height: "calc(4rem + env(safe-area-inset-top, 0px))" }}>
         <button
           onClick={() => setIsSidebarOpen(true)}
           className="p-2 -ml-2 rounded-xl text-gray-700 hover:bg-gray-100/50 active:scale-95 transition-all"
@@ -35,7 +35,7 @@ const MainLayout = ({ children }) => {
         />
       )}
 
-      <main className="flex-1 lg:ml-72 min-h-screen w-full pt-16 lg:pt-0 transition-all duration-300">
+      <main className="flex-1 lg:ml-72 min-h-screen w-full pt-[calc(4rem + env(safe-area-inset-top, 0px))] lg:pt-0 transition-all duration-300">
         {children}
       </main>
     </div>

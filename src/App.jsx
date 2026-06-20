@@ -6,10 +6,12 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Routine from "./pages/Routine";
 import MainLayout from "./components/MainLayout";
+import PWAPrompt from "./components/PWAPrompt";
 
 function App() {
   return (
     <Router>
+      <PWAPrompt />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
